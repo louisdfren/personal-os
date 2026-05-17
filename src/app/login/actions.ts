@@ -1,14 +1,15 @@
 "use server";
 
-import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowed } from "@/lib/auth/allowed-emails";
 
-export async function sendMagicLink(formData: FormData) {
+export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
 
-  if (!email) {
-    return { error: "Email required." };
+  if (!email || !password) {
+    return { error: "Email and password are required." };
   }
 
   if (!isAllowed(email)) {
@@ -16,19 +17,11 @@ export async function sendMagicLink(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const headerList = await headers();
-  const origin = headerList.get("origin") ?? "http://localhost:3000";
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
-  });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: error.message };
   }
 
-  return { sent: true };
+  redirect("/dashboard");
 }

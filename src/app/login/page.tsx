@@ -1,22 +1,18 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { sendMagicLink } from "./actions";
+import { signIn } from "./actions";
 
 export default function LoginPage() {
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function onSubmit(formData: FormData) {
-    setMessage(null);
     setError(null);
     startTransition(async () => {
-      const result = await sendMagicLink(formData);
-      if (result.error) {
+      const result = await signIn(formData);
+      if (result?.error) {
         setError(result.error);
-      } else if (result.sent) {
-        setMessage("Check your inbox — a sign-in link is on the way.");
       }
     });
   }
@@ -29,7 +25,7 @@ export default function LoginPage() {
             Personal OS
           </h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Sign in with a magic link.
+            Sign in to continue.
           </p>
         </div>
 
@@ -48,20 +44,28 @@ export default function LoginPage() {
             />
           </label>
 
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Password
+            </span>
+            <input
+              type="password"
+              name="password"
+              required
+              autoComplete="current-password"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </label>
+
           <button
             type="submit"
             disabled={pending}
             className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
           >
-            {pending ? "Sending…" : "Send magic link"}
+            {pending ? "Signing in…" : "Sign in"}
           </button>
         </form>
 
-        {message && (
-          <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-            {message}
-          </p>
-        )}
         {error && (
           <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
             {error}
