@@ -133,13 +133,13 @@ export async function whoopGetPaginated<T>(
   let nextToken: string | undefined;
 
   for (let page = 0; page < 200; page++) {
-    const url = new URL(`${WHOOP_API_BASE}${path}`);
-    if (query.start) url.searchParams.set("start", query.start);
-    if (query.end) url.searchParams.set("end", query.end);
-    url.searchParams.set("limit", String(query.limit ?? 25));
-    if (nextToken) url.searchParams.set("nextToken", nextToken);
+    const params = new URLSearchParams();
+    if (query.start) params.set("start", query.start);
+    if (query.end) params.set("end", query.end);
+    params.set("limit", String(query.limit ?? 25));
+    if (nextToken) params.set("nextToken", nextToken);
 
-    const res = await whoopFetch(supabase, userId, url.pathname + url.search);
+    const res = await whoopFetch(supabase, userId, `${path}?${params.toString()}`);
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`Whoop GET ${path} failed: ${res.status} ${text}`);
