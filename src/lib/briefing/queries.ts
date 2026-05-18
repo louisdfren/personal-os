@@ -13,19 +13,22 @@ export type BriefingRow = {
 };
 
 export async function getTodayBriefing(): Promise<BriefingRow | null> {
+  return getBriefingForDay(getDayLabel());
+}
+
+export async function getBriefingForDay(dateLabel: string): Promise<BriefingRow | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const today = getDayLabel();
   const { data } = await supabase
     .from("daily_briefings")
     .select(
       "briefing_date, headline, body, recovery_call, nutrition_call, schedule_call, watch_for, created_at",
     )
     .eq("user_id", user.id)
-    .eq("briefing_date", today)
+    .eq("briefing_date", dateLabel)
     .maybeSingle();
   return (data as BriefingRow) ?? null;
 }

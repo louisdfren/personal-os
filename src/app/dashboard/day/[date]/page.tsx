@@ -5,6 +5,7 @@ import { isAllowed } from "@/lib/auth/allowed-emails";
 import { getMealsForDay } from "@/lib/meals/dayQueries";
 import { sumMeals } from "@/lib/meals/types";
 import { getEventsForDay } from "@/lib/google/queries";
+import { getBriefingForDay } from "@/lib/briefing/queries";
 import { getWhoopForDay } from "@/lib/whoop/day";
 import { KJ_TO_KCAL } from "@/lib/aggregates";
 import { APP_TIMEZONE, formatLocalTime, shiftDayLabel } from "@/lib/time/today";
@@ -31,10 +32,11 @@ export default async function DayPage({
     redirect("/login?error=not_allowed");
   }
 
-  const [meals, whoop, events] = await Promise.all([
+  const [meals, whoop, events, briefing] = await Promise.all([
     getMealsForDay(date),
     getWhoopForDay(date),
     getEventsForDay(date),
+    getBriefingForDay(date),
   ]);
   const totals = sumMeals(meals);
   const kcalBurnt = whoop.cycle?.kilojoule != null ? Math.round(whoop.cycle.kilojoule * KJ_TO_KCAL) : null;
@@ -80,6 +82,34 @@ export default async function DayPage({
             </Link>
           </div>
         </header>
+
+        {briefing && (
+          <section className="space-y-3 rounded-2xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-6 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950">
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              Morning briefing
+            </h2>
+            <p className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              {briefing.headline}
+            </p>
+            <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+              {briefing.body}
+            </p>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {briefing.recovery_call && (
+                <DetailPane label="Recovery" body={briefing.recovery_call} />
+              )}
+              {briefing.nutrition_call && (
+                <DetailPane label="Nutrition" body={briefing.nutrition_call} />
+              )}
+              {briefing.schedule_call && (
+                <DetailPane label="Schedule" body={briefing.schedule_call} />
+              )}
+              {briefing.watch_for && (
+                <DetailPane label="Watch for" body={briefing.watch_for} />
+              )}
+            </div>
+          </section>
+        )}
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Stat
@@ -205,6 +235,19 @@ function formatMs(ms: number): string {
   const h = Math.floor(ms / 3_600_000);
   const m = Math.round((ms % 3_600_000) / 60_000);
   return `${h}h ${m}m`;
+}
+
+function DetailPane({ label, body }: { label: string; body: string }) {
+  return (
+    <div className="rounded-xl bg-zinc-100 px-4 py-3 dark:bg-zinc-900/60">
+      <p className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        {label}
+      </p>
+      <p className="mt-1 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+        {body}
+      </p>
+    </div>
+  );
 }
 
 function Stat({

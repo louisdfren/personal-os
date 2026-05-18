@@ -14,6 +14,7 @@ import { AddMealForm } from "./AddMealForm";
 import { AdherenceStrip } from "./AdherenceStrip";
 import { BriefingSection } from "./BriefingSection";
 import { CalendarSection } from "./CalendarSection";
+import { HistoryCalendar } from "./HistoryCalendar";
 import { MacrosProgress } from "./MacrosProgress";
 import { MealList } from "./MealList";
 import { RecipeIdeas } from "./RecipeIdeas";
@@ -166,6 +167,8 @@ export default async function DashboardPage() {
             <AddMealForm />
           </div>
         </details>
+
+        <HistoryCalendar series={series} />
 
         <TrendsSection series={series} workouts={workoutsJoined} targets={targets} />
       </div>
