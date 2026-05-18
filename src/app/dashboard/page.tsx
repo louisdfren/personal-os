@@ -1,16 +1,18 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowed } from "@/lib/auth/allowed-emails";
+import { getDailySeries } from "@/lib/aggregates";
 import { getMealsToday } from "@/lib/meals/queries";
 import { sumMeals } from "@/lib/meals/types";
 import { getWhoopStatus } from "@/lib/whoop/queries";
-import { getWhoopToday } from "@/lib/whoop/today";
+import { getWorkouts, joinRecovery } from "@/lib/whoop/workoutsQuery";
 import { signOut } from "./actions";
 import { AddMealForm } from "./AddMealForm";
 import { MealList } from "./MealList";
 import { SmartMealForm } from "./SmartMealForm";
+import { TodayStrip } from "./TodayStrip";
+import { TrendsSection } from "./TrendsSection";
 import { WhoopSection } from "./WhoopSection";
-import { WhoopTile } from "./WhoopTile";
 
 export const dynamic = "force-dynamic";
 
@@ -29,15 +31,22 @@ export default async function DashboardPage() {
     redirect("/login?error=not_allowed");
   }
 
-  const meals = await getMealsToday();
+  const [meals, whoop, series, workouts] = await Promise.all([
+    getMealsToday(),
+    getWhoopStatus(),
+    getDailySeries(365),
+    getWorkouts(365),
+  ]);
   const totals = sumMeals(meals);
-  const whoop = await getWhoopStatus();
-  const whoopToday = whoop.connected ? await getWhoopToday() : null;
+
+  const recoveryByDate = new Map(series.map((p) => [p.date, p.recovery]));
+  const workoutsJoined = joinRecovery(workouts, recoveryByDate);
+
   const name = user.email?.split("@")[0] ?? "you";
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-12 dark:bg-zinc-950">
-      <div className="mx-auto max-w-2xl space-y-8">
+      <div className="mx-auto max-w-4xl space-y-8">
         <header className="flex items-start justify-between">
           <div>
             <p className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -46,9 +55,7 @@ export default async function DashboardPage() {
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               Hello, {name}.
             </h1>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-              {user.email}
-            </p>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{user.email}</p>
           </div>
 
           <form action={signOut}>
@@ -61,10 +68,17 @@ export default async function DashboardPage() {
           </form>
         </header>
 
+        <TodayStrip series={series.slice(-30)} />
+
+        <WhoopSection
+          connected={whoop.connected}
+          lastSyncAt={whoop.connected ? whoop.lastSyncAt : null}
+        />
+
         <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-              Today
+              Today's meals
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               {meals.length} {meals.length === 1 ? "meal" : "meals"}
@@ -87,19 +101,11 @@ export default async function DashboardPage() {
               Log a meal
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Describe what you ate and Claude estimates the macros. Edit or
-              delete the entry above if the estimate is off.
+              Describe what you ate and Claude estimates the macros.
             </p>
           </div>
           <SmartMealForm />
         </section>
-
-        <WhoopSection
-          connected={whoop.connected}
-          lastSyncAt={whoop.connected ? whoop.lastSyncAt : null}
-        >
-          {whoopToday && <WhoopTile today={whoopToday} />}
-        </WhoopSection>
 
         <details className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
           <summary className="cursor-pointer text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -109,6 +115,8 @@ export default async function DashboardPage() {
             <AddMealForm />
           </div>
         </details>
+
+        <TrendsSection series={series} workouts={workoutsJoined} />
       </div>
     </main>
   );

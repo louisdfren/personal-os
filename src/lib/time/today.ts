@@ -30,3 +30,22 @@ export function formatLocalTime(iso: string): string {
     minute: "2-digit",
   });
 }
+
+export function getDayRange(dateLabel: string): { startIso: string; endIso: string } {
+  const start = fromZonedTime(`${dateLabel}T00:00:00`, APP_TIMEZONE);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { startIso: start.toISOString(), endIso: end.toISOString() };
+}
+
+export function getDayLabel(date: Date = new Date()): string {
+  return format(
+    new Date(date.toLocaleString("en-US", { timeZone: APP_TIMEZONE })),
+    "yyyy-MM-dd",
+  );
+}
+
+export function shiftDayLabel(dateLabel: string, deltaDays: number): string {
+  const start = fromZonedTime(`${dateLabel}T00:00:00`, APP_TIMEZONE);
+  const shifted = new Date(start.getTime() + deltaDays * 24 * 60 * 60 * 1000);
+  return getDayLabel(shifted);
+}
