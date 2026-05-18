@@ -3,10 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { isAllowed } from "@/lib/auth/allowed-emails";
 import { getMealsToday } from "@/lib/meals/queries";
 import { sumMeals } from "@/lib/meals/types";
+import { getWhoopStatus } from "@/lib/whoop/queries";
+import { getWhoopToday } from "@/lib/whoop/today";
 import { signOut } from "./actions";
 import { AddMealForm } from "./AddMealForm";
 import { MealList } from "./MealList";
 import { SmartMealForm } from "./SmartMealForm";
+import { WhoopSection } from "./WhoopSection";
+import { WhoopTile } from "./WhoopTile";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +31,8 @@ export default async function DashboardPage() {
 
   const meals = await getMealsToday();
   const totals = sumMeals(meals);
+  const whoop = await getWhoopStatus();
+  const whoopToday = whoop.connected ? await getWhoopToday() : null;
   const name = user.email?.split("@")[0] ?? "you";
 
   return (
@@ -87,6 +93,13 @@ export default async function DashboardPage() {
           </div>
           <SmartMealForm />
         </section>
+
+        <WhoopSection
+          connected={whoop.connected}
+          lastSyncAt={whoop.connected ? whoop.lastSyncAt : null}
+        >
+          {whoopToday && <WhoopTile today={whoopToday} />}
+        </WhoopSection>
 
         <details className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
           <summary className="cursor-pointer text-sm font-medium text-zinc-700 dark:text-zinc-300">
