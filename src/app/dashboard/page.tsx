@@ -8,8 +8,10 @@ import { getWhoopStatus } from "@/lib/whoop/queries";
 import { getWorkouts, joinRecovery } from "@/lib/whoop/workoutsQuery";
 import { getCalendarStatus, getEventsForToday } from "@/lib/google/queries";
 import { getTargets } from "@/lib/targets/queries";
+import { getTodayBriefing } from "@/lib/briefing/queries";
 import { signOut } from "./actions";
 import { AddMealForm } from "./AddMealForm";
+import { BriefingSection } from "./BriefingSection";
 import { CalendarSection } from "./CalendarSection";
 import { MacrosProgress } from "./MacrosProgress";
 import { MealList } from "./MealList";
@@ -37,15 +39,17 @@ export default async function DashboardPage() {
     redirect("/login?error=not_allowed");
   }
 
-  const [meals, whoop, series, workouts, calendar, todaysEvents, targets] = await Promise.all([
-    getMealsToday(),
-    getWhoopStatus(),
-    getDailySeries(365),
-    getWorkouts(365),
-    getCalendarStatus(),
-    getEventsForToday(),
-    getTargets(),
-  ]);
+  const [meals, whoop, series, workouts, calendar, todaysEvents, targets, briefing] =
+    await Promise.all([
+      getMealsToday(),
+      getWhoopStatus(),
+      getDailySeries(365),
+      getWorkouts(365),
+      getCalendarStatus(),
+      getEventsForToday(),
+      getTargets(),
+      getTodayBriefing(),
+    ]);
   const totals = sumMeals(meals);
 
   const recoveryByDate = new Map(series.map((p) => [p.date, p.recovery]));
@@ -76,6 +80,8 @@ export default async function DashboardPage() {
             </button>
           </form>
         </header>
+
+        <BriefingSection briefing={briefing} />
 
         <TodayStrip series={series.slice(-30)} />
 

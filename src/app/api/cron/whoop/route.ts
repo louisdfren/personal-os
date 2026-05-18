@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildBriefingInput } from "@/lib/briefing/data";
+import { generateBriefing } from "@/lib/briefing/generate";
 import { syncCalendarEvents } from "@/lib/google/sync";
 import { syncWhoopWindow } from "@/lib/whoop/sync";
 
@@ -55,10 +57,30 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const briefingResults: Array<{ user_id: string; ok: boolean; error?: string }> = [];
+  const allUserIds = new Set<string>([
+    ...(whoopTokens ?? []).map((r) => r.user_id),
+    ...(calendarTokens ?? []).map((r) => r.user_id),
+  ]);
+  for (const userId of allUserIds) {
+    try {
+      const input = await buildBriefingInput(admin, userId);
+      await generateBriefing(admin, userId, input);
+      briefingResults.push({ user_id: userId, ok: true });
+    } catch (e) {
+      briefingResults.push({
+        user_id: userId,
+        ok: false,
+        error: e instanceof Error ? e.message : "Unknown error",
+      });
+    }
+  }
+
   return NextResponse.json({
     ranAt: new Date().toISOString(),
     window: { start, end },
     whoop: whoopResults,
     calendar: calendarResults,
+    briefings: briefingResults,
   });
 }
