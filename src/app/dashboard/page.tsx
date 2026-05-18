@@ -7,11 +7,15 @@ import { sumMeals } from "@/lib/meals/types";
 import { getWhoopStatus } from "@/lib/whoop/queries";
 import { getWorkouts, joinRecovery } from "@/lib/whoop/workoutsQuery";
 import { getCalendarStatus, getEventsForToday } from "@/lib/google/queries";
+import { getTargets } from "@/lib/targets/queries";
 import { signOut } from "./actions";
 import { AddMealForm } from "./AddMealForm";
 import { CalendarSection } from "./CalendarSection";
+import { MacrosProgress } from "./MacrosProgress";
 import { MealList } from "./MealList";
+import { RecipeIdeas } from "./RecipeIdeas";
 import { SmartMealForm } from "./SmartMealForm";
+import { TargetsForm } from "./TargetsForm";
 import { TodayStrip } from "./TodayStrip";
 import { TrendsSection } from "./TrendsSection";
 import { WhoopSection } from "./WhoopSection";
@@ -33,13 +37,14 @@ export default async function DashboardPage() {
     redirect("/login?error=not_allowed");
   }
 
-  const [meals, whoop, series, workouts, calendar, todaysEvents] = await Promise.all([
+  const [meals, whoop, series, workouts, calendar, todaysEvents, targets] = await Promise.all([
     getMealsToday(),
     getWhoopStatus(),
     getDailySeries(365),
     getWorkouts(365),
     getCalendarStatus(),
     getEventsForToday(),
+    getTargets(),
   ]);
   const totals = sumMeals(meals);
 
@@ -96,15 +101,40 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-4 gap-3">
-            <Stat label="Calories" value={Math.round(totals.calories)} />
-            <Stat label="Protein" value={`${totals.protein_g.toFixed(0)}g`} />
-            <Stat label="Carbs" value={`${totals.carbs_g.toFixed(0)}g`} />
-            <Stat label="Fat" value={`${totals.fat_g.toFixed(0)}g`} />
-          </div>
+          {targets ? (
+            <MacrosProgress totals={totals} targets={targets} />
+          ) : (
+            <div className="grid grid-cols-4 gap-3">
+              <Stat label="Calories" value={Math.round(totals.calories)} />
+              <Stat label="Protein" value={`${totals.protein_g.toFixed(0)}g`} />
+              <Stat label="Carbs" value={`${totals.carbs_g.toFixed(0)}g`} />
+              <Stat label="Fat" value={`${totals.fat_g.toFixed(0)}g`} />
+            </div>
+          )}
 
           <MealList meals={meals} />
         </section>
+
+        <section className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+          <div>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              Meal ideas
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Claude suggests three meals that close today's macro gap.
+            </p>
+          </div>
+          <RecipeIdeas />
+        </section>
+
+        <details className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+          <summary className="cursor-pointer text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Daily macros targets
+          </summary>
+          <div className="mt-4">
+            <TargetsForm current={targets} />
+          </div>
+        </details>
 
         <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
           <div>
