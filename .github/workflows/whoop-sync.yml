@@ -1,0 +1,20 @@
+name: Whoop daily sync
+
+on:
+  schedule:
+    # Runs at 05:00 and 06:00 UTC every day.
+    # BST: 05:00 UTC = 06:00 London — the 05:00 cron is the active one in summer.
+    # GMT: 06:00 UTC = 06:00 London — the 06:00 cron is the active one in winter.
+    # The sync upserts by natural key so the second run of the day is a no-op.
+    - cron: "0 5,6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Whoop sync endpoint
+        run: |
+          curl -sS --fail-with-body \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://personal-os-ten-rust.vercel.app/api/cron/whoop"
