@@ -11,6 +11,7 @@ import { getTargets } from "@/lib/targets/queries";
 import { getTodayBriefing } from "@/lib/briefing/queries";
 import { signOut } from "./actions";
 import { AddMealForm } from "./AddMealForm";
+import { AdherenceStrip } from "./AdherenceStrip";
 import { BriefingSection } from "./BriefingSection";
 import { CalendarSection } from "./CalendarSection";
 import { MacrosProgress } from "./MacrosProgress";
@@ -108,7 +109,10 @@ export default async function DashboardPage() {
           </div>
 
           {targets ? (
-            <MacrosProgress totals={totals} targets={targets} />
+            <>
+              <MacrosProgress totals={totals} targets={targets} />
+              <AdherenceStrip series={series} targets={targets} />
+            </>
           ) : (
             <div className="grid grid-cols-4 gap-3">
               <Stat label="Calories" value={Math.round(totals.calories)} />
@@ -163,7 +167,7 @@ export default async function DashboardPage() {
           </div>
         </details>
 
-        <TrendsSection series={series} workouts={workoutsJoined} />
+        <TrendsSection series={series} workouts={workoutsJoined} targets={targets} />
       </div>
     </main>
   );

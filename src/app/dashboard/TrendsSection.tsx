@@ -15,9 +15,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { DailyPoint } from "@/lib/aggregates-shared";
+import type { DailyPoint, MacrosTargets } from "@/lib/aggregates-shared";
 import { baseline, rollingMean } from "@/lib/aggregates-shared";
 import type { WorkoutRow } from "@/lib/whoop/workoutsQuery";
+import { AdherenceHeatmap } from "./AdherenceHeatmap";
 
 type Window = 7 | 30 | 90 | 365;
 const WINDOWS: Array<{ label: string; days: Window }> = [
@@ -30,9 +31,10 @@ const WINDOWS: Array<{ label: string; days: Window }> = [
 type Props = {
   series: DailyPoint[];
   workouts: Array<WorkoutRow & { nextDayRecovery: number | null }>;
+  targets: MacrosTargets | null;
 };
 
-export function TrendsSection({ series, workouts }: Props) {
+export function TrendsSection({ series, workouts, targets }: Props) {
   const [days, setDays] = useState<Window>(30);
 
   const sliced = useMemo(() => series.slice(-days), [series, days]);
@@ -64,6 +66,9 @@ export function TrendsSection({ series, workouts }: Props) {
       <HrvChart series={sliced} />
       <CaloriesChart series={sliced} />
       <RecoveryStrainChart series={sliced} />
+      <ChartCard title="Macro adherence" subtitle="Each cell is one day; ±10% of target = on target">
+        <AdherenceHeatmap series={sliced} targets={targets} />
+      </ChartCard>
       <WorkoutsTable workouts={workouts.filter((w) => withinDays(w.startAt, days))} />
     </div>
   );

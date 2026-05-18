@@ -25,6 +25,9 @@ function emptyMap(days: number, endDate: string): Map<string, DailyPoint> {
       strain: null,
       kcalBurnt: null,
       kcalIntake: null,
+      proteinG: null,
+      carbsG: null,
+      fatG: null,
       sleepAsleepMs: null,
       workoutCount: 0,
     });
@@ -71,7 +74,7 @@ export async function getDailySeries(days: number): Promise<DailyPoint[]> {
       .gte("start_at", earliestIso),
     supabase
       .from("meals")
-      .select("calories, eaten_at")
+      .select("calories, protein_g, carbs_g, fat_g, eaten_at")
       .eq("user_id", user.id)
       .gte("eaten_at", earliestIso),
   ]);
@@ -105,6 +108,9 @@ export async function getDailySeries(days: number): Promise<DailyPoint[]> {
     const p = points.get(londonDay(m.eaten_at));
     if (!p) continue;
     p.kcalIntake = (p.kcalIntake ?? 0) + (m.calories ?? 0);
+    p.proteinG = (p.proteinG ?? 0) + (m.protein_g ?? 0);
+    p.carbsG = (p.carbsG ?? 0) + (m.carbs_g ?? 0);
+    p.fatG = (p.fatG ?? 0) + (m.fat_g ?? 0);
   }
 
   return Array.from(points.values());
