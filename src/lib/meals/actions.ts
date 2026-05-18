@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowed } from "@/lib/auth/allowed-emails";
+import { parseMealDescription } from "./parse";
 
 function parseOptionalNumber(value: FormDataEntryValue | null): number | null {
   if (value == null || value === "") return null;
@@ -46,6 +47,51 @@ export async function addMeal(formData: FormData) {
 
   revalidatePath("/dashboard");
   return { ok: true };
+}
+
+export async function logFromDescription(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || !isAllowed(user.email)) {
+    return { error: "Not authorised." };
+  }
+
+  const description = String(formData.get("description") ?? "").trim();
+  if (!description) {
+    return { error: "Tell me what you ate." };
+  }
+
+  let parsed;
+  try {
+    parsed = await parseMealDescription(description);
+  } catch (err) {
+    console.error("parseMealDescription failed:", err);
+    return {
+      error:
+        err instanceof Error ? err.message : "Could not estimate macros.",
+    };
+  }
+
+  const { error } = await supabase.from("meals").insert({
+    user_id: user.id,
+    name: parsed.name,
+    calories: parsed.calories,
+    protein_g: parsed.protein_g,
+    carbs_g: parsed.carbs_g,
+    fat_g: parsed.fat_g,
+    notes: `[${parsed.confidence}] ${parsed.assumptions}`.slice(0, 500),
+  });
+
+  if (error) {
+    console.error("logFromDescription insert failed:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { ok: true, parsed };
 }
 
 export async function deleteMeal(formData: FormData): Promise<void> {

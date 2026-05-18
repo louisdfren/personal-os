@@ -6,6 +6,7 @@ import { sumMeals } from "@/lib/meals/types";
 import { signOut } from "./actions";
 import { AddMealForm } from "./AddMealForm";
 import { MealList } from "./MealList";
+import { SmartMealForm } from "./SmartMealForm";
 
 export const dynamic = "force-dynamic";
 
@@ -74,12 +75,27 @@ export default async function DashboardPage() {
           <MealList meals={meals} />
         </section>
 
-        <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-            Log a meal
-          </h2>
-          <AddMealForm />
+        <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+          <div>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              Log a meal
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Describe what you ate and Claude estimates the macros. Edit or
+              delete the entry above if the estimate is off.
+            </p>
+          </div>
+          <SmartMealForm />
         </section>
+
+        <details className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+          <summary className="cursor-pointer text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Log manually with exact macros
+          </summary>
+          <div className="mt-4">
+            <AddMealForm />
+          </div>
+        </details>
       </div>
     </main>
   );
