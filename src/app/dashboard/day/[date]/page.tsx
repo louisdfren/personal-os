@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isAllowed } from "@/lib/auth/allowed-emails";
 import { getMealsForDay } from "@/lib/meals/dayQueries";
 import { sumMeals } from "@/lib/meals/types";
+import { getEventsForDay } from "@/lib/google/queries";
 import { getWhoopForDay } from "@/lib/whoop/day";
 import { KJ_TO_KCAL } from "@/lib/aggregates";
 import { APP_TIMEZONE, formatLocalTime, shiftDayLabel } from "@/lib/time/today";
@@ -30,7 +31,11 @@ export default async function DayPage({
     redirect("/login?error=not_allowed");
   }
 
-  const [meals, whoop] = await Promise.all([getMealsForDay(date), getWhoopForDay(date)]);
+  const [meals, whoop, events] = await Promise.all([
+    getMealsForDay(date),
+    getWhoopForDay(date),
+    getEventsForDay(date),
+  ]);
   const totals = sumMeals(meals);
   const kcalBurnt = whoop.cycle?.kilojoule != null ? Math.round(whoop.cycle.kilojoule * KJ_TO_KCAL) : null;
   const net = kcalBurnt != null ? Math.round(totals.calories) - kcalBurnt : null;
@@ -98,6 +103,30 @@ export default async function DayPage({
                 : `${Math.round(totals.calories)} in`
             }
           />
+        </section>
+
+        <section className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Calendar</h2>
+          {events.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No meetings.</p>
+          ) : (
+            <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {events.map((e) => (
+                <li key={e.id} className="py-2 text-sm">
+                  <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                    {e.summary ?? "(no title)"}
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {e.all_day
+                      ? "All day"
+                      : `${formatLocalTime(e.start_at)} – ${formatLocalTime(e.end_at)}`}
+                    {e.location ? ` · ${e.location}` : ""}
+                    {e.calendar_name ? ` · ${e.calendar_name}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">

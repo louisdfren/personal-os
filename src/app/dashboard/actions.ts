@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { syncWhoopWindow } from "@/lib/whoop/sync";
+import { syncCalendarEvents } from "@/lib/google/sync";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -38,6 +39,25 @@ export async function refreshWhoop(): Promise<{ ok: true; counts: { recovery: nu
       start.toISOString(),
       now.toISOString(),
     );
+    revalidatePath("/dashboard");
+    return { ok: true, counts };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return { ok: false, error: message };
+  }
+}
+
+export async function refreshCalendar(): Promise<
+  | { ok: true; counts: { calendars: number; events: number } }
+  | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in" };
+  try {
+    const counts = await syncCalendarEvents(supabase, user.id, 30, 30);
     revalidatePath("/dashboard");
     return { ok: true, counts };
   } catch (e) {

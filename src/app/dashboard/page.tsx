@@ -6,8 +6,10 @@ import { getMealsToday } from "@/lib/meals/queries";
 import { sumMeals } from "@/lib/meals/types";
 import { getWhoopStatus } from "@/lib/whoop/queries";
 import { getWorkouts, joinRecovery } from "@/lib/whoop/workoutsQuery";
+import { getCalendarStatus, getEventsForToday } from "@/lib/google/queries";
 import { signOut } from "./actions";
 import { AddMealForm } from "./AddMealForm";
+import { CalendarSection } from "./CalendarSection";
 import { MealList } from "./MealList";
 import { SmartMealForm } from "./SmartMealForm";
 import { TodayStrip } from "./TodayStrip";
@@ -31,11 +33,13 @@ export default async function DashboardPage() {
     redirect("/login?error=not_allowed");
   }
 
-  const [meals, whoop, series, workouts] = await Promise.all([
+  const [meals, whoop, series, workouts, calendar, todaysEvents] = await Promise.all([
     getMealsToday(),
     getWhoopStatus(),
     getDailySeries(365),
     getWorkouts(365),
+    getCalendarStatus(),
+    getEventsForToday(),
   ]);
   const totals = sumMeals(meals);
 
@@ -73,6 +77,13 @@ export default async function DashboardPage() {
         <WhoopSection
           connected={whoop.connected}
           lastSyncAt={whoop.connected ? whoop.lastSyncAt : null}
+        />
+
+        <CalendarSection
+          connected={calendar.connected}
+          email={calendar.connected ? calendar.email : null}
+          lastSyncAt={calendar.connected ? calendar.lastSyncAt : null}
+          events={todaysEvents}
         />
 
         <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
